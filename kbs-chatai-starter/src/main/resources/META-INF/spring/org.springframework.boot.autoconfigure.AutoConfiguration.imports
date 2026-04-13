@@ -1,0 +1,2 @@
+com.kbs.chatai.starter.config.ChatClientAutoConfiguration
+com.kbs.chatai.starter.config.RagAutoConfiguration

@@ -1,0 +1,150 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /kbs
+
+spring:
+  application:
+    name: kbs-api
+
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/kbs?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: 123456
+    hikari:
+      connection-timeout: 30000
+      # 最大连接数，cpu核心数 * 2
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      transaction-isolation:
+
+  # es自动配置
+  elasticsearch:
+    uris: http://localhost:9200
+    username: elastic
+    password: 123456
+    connection-timeout: 1s
+    socket-timeout: 30s
+
+  # Redis 配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+
+  ai:
+    # 阿里百炼模型自动配置
+    dashscope:
+      read-timeout: 300
+      api-key: ${DASHSCOPE_API_KEY}
+      # 对话模型
+      chat:
+        options:
+          model: qwen-plus
+      # 向量模型
+      embedding:
+        options:
+          model: text-embedding-v4
+          dimensions: 1024
+      # 重排序模型
+      rerank:
+        top-n: 5
+        options:
+          model: gte-rerank
+
+    # 会话记忆存储自动配置（ChatMemory）
+    chat:
+      memory:
+        repository:
+          jdbc:
+            # 每次启动自动执行脚本
+            initialize-schema: NEVER
+            # 指定使用classpath路径下的数据库表结构定义文件
+            schema: classpath:/sql/spring_ai_chat_memory.sql
+
+    # 向量存储自动配置
+    vectorstore:
+      elasticsearch:
+        index-name: kbs-document-index
+        # 向量维度
+        dimensions: 1024
+        # 相似度算法（cosine：余弦相似度， l2_norm：欧氏距离， dot_product：点积优化）
+        similarity: cosine
+        # 是否初始化向量表结构
+        initialize-schema: true
+
+    # mcp客户端配置
+    mcp:
+      client:
+        version: 1.0.0
+        request-timeout: 20s
+        type: sync
+        streamable-http:
+          connections:
+            data-query:
+              url: http://localhost:8081
+              endpoint: /kbs-mcp
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.kbs.core.entity
+  global-config:
+    db-config:
+      id-type: assign_id
+
+# KBS 模块配置
+kbs:
+  # 安全模块配置
+  security:
+    jwt-secret: kbs-default-secret-key-change-in-production
+    access-token-expire: 7200
+    refresh-token-expire: 604800
+    permit-all-urls:
+      - /auth/login
+      - /auth/refreshToken
+      - /user/register
+
+  # 文件服务配置
+  oss:
+    endpoint: oss-cn-shanghai.aliyuncs.com
+    access-key-id: ${OSS_ACCESS_KEY_ID}
+    access-key-secret: ${OSS_ACCESS_KEY_SECRET}
+    bucket-name: kbs-files
+    path-prefix: documents/
+
+  # AI 对话配置
+  chatai:
+    temperature: 0.4
+    max-messages: 20
+    similarity-threshold: 0.4
+    top-k: 3
+
+  # 文档分割配置
+  document-splitter:
+    chunkSize: 800
+    minChunkSizeChars: 350
+    minChunkLengthToEmbed: 5
+    maxNumChunks: 10000
+    keepSeparator: true
+
+# RocketMQ 配置
+rocketmq:
+  # NameServer 地址
+  name-server: localhost:9876
+  # 生产者配置
+  producer:
+    group: kbs-producer-group
+    # 发送消息超时时间（毫秒）
+    send-message-timeout: 3000
+    # 重试次数
+    retry-times-when-send-failed: 2
+    # 异步发送重试次数
+    retry-times-when-send-async-failed: 2
+    # 是否启用消息追踪
+    enable-msg-trace: true

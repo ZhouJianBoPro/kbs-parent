@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kbs.core.mapper.TokenUsageMapper">
+
+    <!-- 统计排名前N的用户 -->
+    <select id="selectTopUsers" resultType="com.kbs.core.vo.TokenStatVO$UserTokenStat">
+        SELECT
+            t.user_id AS userId,
+            u.username AS username,
+            SUM(t.input_token) AS inputToken,
+            SUM(t.output_token) AS outputToken,
+            SUM(t.total_token) AS totalToken
+        FROM token_usage t
+        LEFT JOIN app_user u ON t.user_id = u.id
+        WHERE t.del_flag = 0
+        <if test="dimension == 'day'">
+            AND DATE(t.create_time) = CURDATE()
+        </if>
+        <if test="dimension == 'week'">
+            AND YEARWEEK(DATE_FORMAT(t.create_time, '%Y-%m-%d'), 1) = YEARWEEK(CURDATE(), 1)
+        </if>
+        <if test="dimension == 'month'">
+            AND DATE_FORMAT(t.create_time, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+        </if>
+        <if test="dimension == 'year'">
+            AND YEAR(t.create_time) = YEAR(CURDATE())
+        </if>
+        GROUP BY t.user_id, u.username
+        ORDER BY totalToken DESC
+        LIMIT #{topN}
+    </select>
+
+    <!-- 统计总消耗量 -->
+    <select id="selectTotalStat" resultType="com.kbs.core.vo.TokenStatVO$TotalTokenStat">
+        SELECT
+            COALESCE(SUM(input_token), 0) AS totalInputToken,
+            COALESCE(SUM(output_token), 0) AS totalOutputToken,
+            COALESCE(SUM(total_token), 0) AS totalToken
+        FROM token_usage
+        WHERE del_flag = 0
+        <if test="dimension == 'day'">
+            AND DATE(create_time) = CURDATE()
+        </if>
+        <if test="dimension == 'week'">
+            AND YEARWEEK(DATE_FORMAT(create_time, '%Y-%m-%d'), 1) = YEARWEEK(CURDATE(), 1)
+        </if>
+        <if test="dimension == 'month'">
+            AND DATE_FORMAT(create_time, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+        </if>
+        <if test="dimension == 'year'">
+            AND YEAR(create_time) = YEAR(CURDATE())
+        </if>
+    </select>
+
+    <!-- 按时间维度统计Token使用量 -->
+    <select id="selectTimeDimensionStat" resultType="com.kbs.core.vo.TokenStatVO$TimeDimensionStat">
+        <choose>
+            <!-- 按天统计（最近30天） -->
+            <when test="dimension == 'day'">
+                SELECT
+                    DATE(create_time) AS timeLabel,
+                    SUM(input_token) AS inputToken,
+                    SUM(output_token) AS outputToken,
+                    SUM(total_token) AS totalToken
+                FROM token_usage
+                WHERE del_flag = 0
+                  AND create_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                GROUP BY DATE(create_time)
+                ORDER BY timeLabel
+            </when>
+            <!-- 按周统计（最近12周） -->
+            <when test="dimension == 'week'">
+                SELECT
+                    CONCAT(DATE_SUB(DATE(MIN(create_time)), INTERVAL WEEKDAY(MIN(create_time)) DAY), '~',
+                           DATE_ADD(DATE(MIN(create_time)), INTERVAL (6 - WEEKDAY(MIN(create_time))) DAY)) AS timeLabel,
+                    SUM(input_token) AS inputToken,
+                    SUM(output_token) AS outputToken,
+                    SUM(total_token) AS totalToken
+                FROM token_usage
+                WHERE del_flag = 0
+                  AND create_time >= DATE_SUB(CURDATE(), INTERVAL 12 WEEK)
+                GROUP BY YEARWEEK(create_time)
+                ORDER BY MIN(create_time)
+            </when>
+            <!-- 按月统计（最近12个月） -->
+            <when test="dimension == 'month'">
+                SELECT
+                    DATE_FORMAT(create_time, '%Y-%m') AS timeLabel,
+                    SUM(input_token) AS inputToken,
+                    SUM(output_token) AS outputToken,
+                    SUM(total_token) AS totalToken
+                FROM token_usage
+                WHERE del_flag = 0
+                  AND create_time >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                GROUP BY DATE_FORMAT(create_time, '%Y-%m')
+                ORDER BY timeLabel
+            </when>
+            <!-- 按年统计（最近5年） -->
+            <when test="dimension == 'year'">
+                SELECT
+                    YEAR(create_time) AS timeLabel,
+                    SUM(input_token) AS inputToken,
+                    SUM(output_token) AS outputToken,
+                    SUM(total_token) AS totalToken
+                FROM token_usage
+                WHERE del_flag = 0
+                  AND create_time >= DATE_SUB(CURDATE(), INTERVAL 5 YEAR)
+                GROUP BY YEAR(create_time)
+                ORDER BY timeLabel
+            </when>
+            <!-- 默认按天统计 -->
+            <otherwise>
+                SELECT
+                    DATE(create_time) AS timeLabel,
+                    SUM(input_token) AS inputToken,
+                    SUM(output_token) AS outputToken,
+                    SUM(total_token) AS totalToken
+                FROM token_usage
+                WHERE del_flag = 0
+                  AND create_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                GROUP BY DATE(create_time)
+                ORDER BY timeLabel
+            </otherwise>
+        </choose>
+    </select>
+
+</mapper>
