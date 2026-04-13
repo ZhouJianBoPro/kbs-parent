@@ -94,7 +94,7 @@ npm run build
 ## MCP 工具服务架构
 
 - **kbs-mcp (端口 8081)**：MCP Server，提供 Tools 工具
-  - endpoint: `/data-query-mcp`
+  - endpoint: `/kbs-mcp`
   - 可用工具：`getUserInfo`、`deleteUserInfo`
 - **kbs-api**：MCP Client，通过 `spring.ai.mcp.client` 配置连接
 
