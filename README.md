@@ -6,17 +6,17 @@
 
 ### 后端
 
-| 技术 | 说明 |
-|------|------|
-| Spring Boot 3.x | 基础框架 |
+| 技术 | 说明                       |
+|------|--------------------------|
+| Spring Boot 3.x | 基础框架                     |
 | Spring AI | AI 能力封装（阿里云百炼 DashScope） |
-| Spring Security + JWT | 认证授权 |
-| MyBatis-Plus | 数据库访问 |
-| RocketMQ | 消息队列（异步处理 AI 对话） |
-| Redis | 缓存、Session、Token 存储、消息发布/订阅 |
-| Elasticsearch | 向量存储（RAG 知识检索） |
-| MCP (Model Context Protocol) | 工具服务（Streamable HTTP） |
-| 阿里云 OSS | 文件存储 |
+| Spring Security + JWT | 认证授权 （双Token）            |
+| MyBatis-Plus | 数据库访问                    |
+| RocketMQ | 消息队列（异步处理 文档 及 AI 对话）    |
+| Redis | 缓存、Token 存储、消息发布/订阅      |
+| Elasticsearch | 向量存储（RAG 知识检索）           |
+| MCP (Model Context Protocol) | 工具服务（Streamable HTTP）    |
+| 阿里云 OSS | 文件存储                     |
 
 ### 前端
 
@@ -117,7 +117,7 @@ kbs-parent/                    # 父项目
 - **AI 对话**：基于 RAG + MCP 工具的智能对话
   - 支持流式输出
   - 上下文记忆
-  - 可调用工具查询用户信息
+  - 可调用工具查询/删除用户信息
 - **个人中心**
   - 查看/修改个人信息
   - 修改密码
